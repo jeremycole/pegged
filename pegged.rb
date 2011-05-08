@@ -188,10 +188,3 @@ class Pegged
     @board = Marshal.load(Marshal.dump(board ? board : FILLED_BOARD))
   end
 end
-
-#b = Pegged.new
-#b.random_board!
-
-#puts (b.solved?)?"solved":"unsolved"
-
-#b.solve!
