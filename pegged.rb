@@ -24,7 +24,7 @@ class Pegged
 
   def initialize(board=nil)
     @board        = nil
-    @stack        = []
+    @move_stack   = []
     @solutions    = []
     load! board
   end
@@ -46,7 +46,7 @@ class Pegged
 
   alias inspect to_s
   
-  def is_possible_move?(row, col, move)
+  def is_possible_move?(row, col, move, direction=true)
     j_row, j_col = move[:jump]
     l_row, l_col = move[:land]
   
@@ -57,8 +57,9 @@ class Pegged
     return false if @board[row + l_row][col + l_col] == nil
   
     # Legality checking
-    return false if @board[row + j_row][col + j_col] == false
-    return false if @board[row + l_row][col + l_col] == true
+    return false unless @board[row][col] == direction
+    return false unless @board[row + j_row][col + j_col] == direction
+    return false unless @board[row + l_row][col + l_col] == !direction
   
     true
   end
@@ -83,6 +84,7 @@ class Pegged
         yield row, col if @board[row][col] == state
       end
     end
+    true
   end
 
   def array_each_position(state)
@@ -95,9 +97,9 @@ class Pegged
 
   def each_possible_move(row, col)
     POSSIBLE_MOVES.each do |move|
-      l_row, l_col = move[:land]
       yield move if is_possible_move?(row, col, move)
     end
+    true
   end
 
   def array_each_possible_move(row, col)
@@ -135,51 +137,70 @@ class Pegged
   end
 
   def move!(row, col, move, direction)
-    return false unless is_possible_move? row, col, move
     j_row, j_col = move[:jump]
     l_row, l_col = move[:land]
-    remove! row, col
-    remove! row + j_row, col + j_col
-    place!  row + l_row, col + l_col
+    set! row, col, !direction
+    set! row + j_row, col + j_col, !direction
+    set! row + l_row, col + l_col, direction
     move
   end
 
   def forward_move!(row, col, move)
+    @move_stack << move
     move! row, col, move, true
   end
 
   def reverse_move!(row, col, move)
+    @move_stack.pop
     move! row, col, move, false
   end
 
-  def solution
-    printf "Solution for %i pegs remaining:\n", remaining
-    @stack.each do |step|
+  def solution(stack)
+    printf "Solution for %i peg%s remaining:\n", remaining, remaining==1?"":"s"
+    step_n = 0
+    stack.each do |step|
       from_row, from_col = step[:from]
       land_row, land_col = step[:land]
-      printf "%i, %i -> %i, %i\n",
+      printf "%2i: %i, %i -> %i, %i\n",
+        step_n += 1,
         from_row, from_col,
         from_row+land_row, from_col+land_col
     end
   end
 
-  def solve!
+  def each_solution
     array_each_position(true).each do |from_row, from_col|
       array_each_possible_move(from_row, from_col).each do |move|
-        move[:from] = [from_row, from_col]
-        printf "Position: %i, %i | Possible move: %2i, %2i\n",
-          from_row, from_col, *move[:land]
-        @stack << move
-        forward_move! from_row, from_col, move
+        this_move = move.dup
+        this_move[:from] = [from_row, from_col]
+        forward_move! from_row, from_col, this_move
         if solved? then
-          puts "Solved!"
-          puts self
-          solution
-          reverse_move! from_row, from_col, @stack.pop
+          yield @move_stack
         else
-          solve!
+          each_solution do |stack|
+            yield stack
+          end
         end
+        reverse_move! from_row, from_col, this_move
       end
+    end
+  end
+
+  def solve!
+    each_solution do |stack|
+      puts self
+      solution stack
+    end
+    true
+  end
+
+  def solution_summary!
+    solutions = Hash.new
+    each_solution do |stack|
+      solutions[remaining] = solutions[remaining] ? (solutions[remaining] + 1) : 1
+    end
+    solutions.each do |pegs_remaining, solution_count|
+      printf "%i remaining: %i solutions\n", pegs_remaining, solution_count
     end
     true
   end
@@ -187,4 +208,6 @@ class Pegged
   def load!(board=nil)
     @board = Marshal.load(Marshal.dump(board ? board : FILLED_BOARD))
   end
+  
+  alias reset! load!
 end
