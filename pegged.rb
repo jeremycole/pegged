@@ -1,5 +1,5 @@
 class Pegged
-  attr_accessor :board, :stack, :solutions
+  attr_accessor :board, :move_stack, :solutions
 
   # A fully filled peg board used for initialization.
   FILLED_BOARD = [
