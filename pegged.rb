@@ -79,35 +79,27 @@ class Pegged
   end
 
   def each_position(state)
-    (0..4).each do |row|
-      (0..4).each do |col|
-        yield row, col if @board[row][col] == state
+    if block_given?
+      (0..4).each do |row|
+        (0..4).each do |col|
+          yield row, col if @board[row][col] == state
+        end
       end
+      true
+    else
+      Enumerable::Enumerator.new(self, :each_position, state)
     end
-    true
-  end
-
-  def array_each_position(state)
-    result = []
-    each_position(state) do |row, col|
-      result << [row, col]
-    end
-    result
   end
 
   def each_possible_move(row, col)
-    POSSIBLE_MOVES.each do |move|
-      yield move if is_possible_move?(row, col, move)
+    if block_given?
+      POSSIBLE_MOVES.each do |move|
+        yield move if is_possible_move?(row, col, move)
+      end
+      true
+    else
+      Enumerable::Enumerator.new(self, :each_possible_move, row, col)
     end
-    true
-  end
-
-  def array_each_possible_move(row, col)
-    result = []
-    each_possible_move(row, col) do |move|
-      result << move
-    end
-    result
   end
 
   def solved?
@@ -169,8 +161,8 @@ class Pegged
   end
 
   def each_solution
-    array_each_position(true).each do |from_row, from_col|
-      array_each_possible_move(from_row, from_col).each do |move|
+    each_position(true).to_a.each do |from_row, from_col|
+      each_possible_move(from_row, from_col).to_a.each do |move|
         this_move = move.dup
         this_move[:from] = [from_row, from_col]
         forward_move! from_row, from_col, this_move
