@@ -12,7 +12,7 @@ class Pegged
 
   def forward_move!(row, col, move)
     move_count[move_stack.length] += 1
-    move_stack << move
+    move_stack.push move
     board.move! row, col, move, true
   end
 
