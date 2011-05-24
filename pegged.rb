@@ -18,8 +18,8 @@ class Pegged
   end
 
   def reverse_move!(row, col, move)
-    move_count[move_stack.length] += 1
     move_stack.pop
+    move_count[move_stack.length] += 1
     board.move! row, col, move, false
   end
 
