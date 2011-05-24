@@ -14,7 +14,17 @@ class Board
   end
 
   def to_s
-    "No to_s!"
+    return nil unless board
+    s = ""
+    board.each_with_index do |row, row_index|
+      row.each_with_index do |col, col_index|
+        s += "* " if col == true
+        s += ". " if col == false
+        s += "  " if col == nil
+      end
+      s += "\n"
+    end
+    s
   end
   alias inspect to_s
 
@@ -107,7 +117,7 @@ class Board
   end
 
   def random!
-    remove! row = (rand*5).floor, (rand*row).floor
+    remove! row = (rand*board.size).floor, (rand*board[row].size).floor
   end
 
   def move!(row, col, move, direction)

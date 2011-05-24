@@ -12,10 +12,10 @@ class BoardTriangle < Board
     ]
 
     self.filled_board = [
-      [true, nil,  nil,  nil,  nil ],
-      [true, true, nil,  nil,  nil ],
-      [true, true, true, nil,  nil ],
-      [true, true, true, true, nil ],
+      [true],
+      [true, true],
+      [true, true, true],
+      [true, true, true, true],
       [true, true, true, true, true],
     ]
 
