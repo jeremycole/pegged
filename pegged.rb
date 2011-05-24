@@ -1,14 +1,19 @@
 require 'board'
 
 class Pegged
-  attr_accessor :board, :solutions, :move_stack, :move_count, :move_progress
+  attr_accessor :board
+  attr_accessor :solutions, :total_solutions
+  attr_accessor :move_stack, :move_count
+  attr_accessor :time_start, :time_finish
 
   def initialize(initial_board=nil)
-    @board        = initial_board
-    @solutions    = []
-    @move_stack   = []
-    @move_count   = Hash.new(0)
-    @move_progress = []
+    @board              = initial_board
+    @solutions          = []
+    @total_solutions    = 0
+    @time_start         = nil
+    @time_finish        = nil
+    @move_stack         = []
+    @move_count         = Hash.new(0)
   end
 
   def forward_move!(row, col, move)
@@ -37,26 +42,31 @@ class Pegged
     end
   end
 
-  def each_solution
-    all_positions = board.each_position(true).to_a
-    all_positions.each_with_index do |from, position_index|
-      move_progress[move_stack.size] = [position_index+1, all_positions.size]
-      from_row, from_col = *from
-      all_moves = board.each_possible_move(from_row, from_col).to_a
-      all_moves.each_with_index do |move, move_index|
+  def each_recursive_solution
+    board.each_position(true).to_a.each do |from_row, from_col|
+      board.each_possible_move(from_row, from_col).to_a.each do |move|
         this_move = move.dup
         this_move[:from] = [from_row, from_col]
         forward_move! from_row, from_col, this_move
         if board.solved? then
+          self.total_solutions += 1
           yield move_stack
         else
-          each_solution do |stack|
+          each_recursive_solution do |stack|
             yield stack
           end
         end
         reverse_move! from_row, from_col, this_move
       end
     end
+  end
+
+  def each_solution
+    @time_start = Time.now
+    each_recursive_solution do |stack|
+      yield stack
+    end
+    @time_finish = Time.now
   end
 
   def solve!(maximum_remaining=nil)
@@ -66,23 +76,30 @@ class Pegged
         puts board
         print_solution stack
       end
+      if total_solutions % 1000 == 0
+        printf "Solutions: %8i (%8.2f/s)\n", total_solutions,
+          total_solutions / (Time.now - time_start)
+      end
     end
     true
   end
 
-  def solution_summary!
+  def solution_summary!(show_progress=false)
     solutions = Hash.new(0)
     each_solution do |stack|
       solutions[board.remaining] += 1
-      move_progress.each_with_index do |level, depth|
-        printf "%2i: %3i / %3i (%8i)\n", depth, level[0], level[1], move_count[depth]
+      if show_progress
+        solutions.sort.each do |pegs_remaining, solution_count|
+          printf "%2i remaining: %6i solutions\n", pegs_remaining, solution_count
+        end
+        printf "\n"
       end
-      printf "\n"
+      if total_solutions % 1000 == 0
+        printf "Solutions: %8i (%8.2f/s)\n", total_solutions,
+          total_solutions / (Time.now - time_start)
+      end
     end
-    solutions.sort.each do |pegs_remaining, solution_count|
-      printf "%2i remaining: %6i solutions\n", pegs_remaining, solution_count
-    end
-    true
+    solutions
   end
   
   def reset!
