@@ -1,13 +1,14 @@
 require 'board'
 
 class Pegged
-  attr_accessor :board, :solutions, :move_stack, :move_count
+  attr_accessor :board, :solutions, :move_stack, :move_count, :move_progress
 
   def initialize(initial_board=nil)
     @board        = initial_board
     @solutions    = []
     @move_stack   = []
     @move_count   = Hash.new(0)
+    @move_progress = []
   end
 
   def forward_move!(row, col, move)
@@ -37,13 +38,17 @@ class Pegged
   end
 
   def each_solution
-    board.each_position(true).to_a.each do |from_row, from_col|
-      board.each_possible_move(from_row, from_col).to_a.each do |move|
+    all_positions = board.each_position(true).to_a
+    all_positions.each_with_index do |from, position_index|
+      move_progress[move_stack.size] = [position_index+1, all_positions.size]
+      from_row, from_col = *from
+      all_moves = board.each_possible_move(from_row, from_col).to_a
+      all_moves.each_with_index do |move, move_index|
         this_move = move.dup
         this_move[:from] = [from_row, from_col]
         forward_move! from_row, from_col, this_move
         if board.solved? then
-          yield @move_stack
+          yield move_stack
         else
           each_solution do |stack|
             yield stack
@@ -69,8 +74,8 @@ class Pegged
     solutions = Hash.new(0)
     each_solution do |stack|
       solutions[board.remaining] += 1
-      move_count.sort.each do |level, count|
-        printf "%2i: %i\n", level, count
+      move_progress.each_with_index do |level, depth|
+        printf "%2i: %3i / %3i (%8i)\n", depth, level[0], level[1], move_count[depth]
       end
       printf "\n"
     end
