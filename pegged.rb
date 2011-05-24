@@ -24,7 +24,7 @@ class Pegged
 
   def print_solution(stack)
     r = board.remaining
-    printf "Solution for %i peg%s remaining:\n", r, (r==1)?"":"s"
+    printf "Solution for %i peg%s remaining:\n", r, (r==1) ? "" : "s"
     step_n = 0
     stack.each do |step|
       from_row, from_col = step[:from]
