@@ -8,7 +8,7 @@ class Pegged
 
   def initialize(initial_board=nil)
     @board              = initial_board
-    @solutions          = []
+    @solutions          = Hash.new(0)
     @total_solutions    = 0
     @time_start         = nil
     @time_finish        = nil
@@ -28,11 +28,11 @@ class Pegged
     board.move! row, col, move, false
   end
 
-  def print_solution(stack)
+  def print_solution
     r = board.remaining
     printf "Solution for %i peg%s remaining:\n", r, (r==1) ? "" : "s"
     step_n = 0
-    stack.each do |step|
+    move_stack.each do |step|
       from_row, from_col = step[:from]
       land_row, land_col = step[:land]
       printf "%2i: %i, %i -> %i, %i\n",
@@ -49,7 +49,6 @@ class Pegged
         this_move[:from] = [from_row, from_col]
         forward_move! from_row, from_col, this_move
         if board.solved? then
-          self.total_solutions += 1
           yield move_stack
         else
           each_recursive_solution do |stack|
@@ -62,47 +61,39 @@ class Pegged
   end
 
   def each_solution
-    @time_start = Time.now
+    self.time_start = Time.now
+    self.total_solutions = 0
+    self.solutions.clear
+    self.move_stack.clear
+    self.move_count.clear
     each_recursive_solution do |stack|
+      self.total_solutions += 1
+      self.solutions[board.remaining] += 1
+      self.time_finish = Time.now
       yield stack
     end
-    @time_finish = Time.now
   end
 
   def solve!(maximum_remaining=nil)
     maximum_remaining ||= board.remaining
     each_solution do |stack|
-      if board.remaining <= maximum_remaining
-        puts board
-        print_solution stack
-      end
-      if total_solutions % 1000 == 0
-        printf "Solutions: %8i (%8.2f/s)\n", total_solutions,
-          total_solutions / (Time.now - time_start)
-      end
+      yield if block_given?
     end
     true
   end
 
-  def solution_summary!(show_progress=false)
-    solutions = Hash.new(0)
-    each_solution do |stack|
-      solutions[board.remaining] += 1
-      if show_progress
-        solutions.sort.each do |pegs_remaining, solution_count|
-          printf "%2i remaining: %6i solutions\n", pegs_remaining, solution_count
-        end
-        printf "\n"
-      end
-      if total_solutions % 1000 == 0
-        printf "Solutions: %8i (%8.2f/s)\n", total_solutions,
-          total_solutions / (Time.now - time_start)
-      end
+  def solution_summary
+    raise "Not solved yet" if time_start.nil?
+    printf "Solutions: %8i (%8.2f/s)\n", total_solutions,
+      total_solutions / (time_finish - time_start)
+    solutions.sort.each do |pegs_remaining, solution_count|
+      printf "  %2i remaining: %6i solutions\n", pegs_remaining, solution_count
     end
-    solutions
+    printf "\n"
   end
   
   def reset!
     board.load!
+    board.random!
   end
 end
