@@ -42,6 +42,16 @@ class Pegged
     end
   end
 
+  def print_solution_summary
+    raise "Not solved yet" if time_start.nil?
+    printf "Solutions: %8i (%8.2f/s)\n", total_solutions,
+      total_solutions / (time_finish - time_start)
+    solutions.sort.each do |pegs_remaining, solution_count|
+      printf "  %2i remaining: %6i solutions\n", pegs_remaining, solution_count
+    end
+    printf "\n"
+  end
+
   def each_recursive_solution
     board.each_position(true).to_a.each do |from_row, from_col|
       board.each_possible_move(from_row, from_col).to_a.each do |move|
@@ -82,16 +92,6 @@ class Pegged
     true
   end
 
-  def solution_summary
-    raise "Not solved yet" if time_start.nil?
-    printf "Solutions: %8i (%8.2f/s)\n", total_solutions,
-      total_solutions / (time_finish - time_start)
-    solutions.sort.each do |pegs_remaining, solution_count|
-      printf "  %2i remaining: %6i solutions\n", pegs_remaining, solution_count
-    end
-    printf "\n"
-  end
-  
   def reset!
     board.load!
     board.random!
