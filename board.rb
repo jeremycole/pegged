@@ -116,8 +116,10 @@ class Board
     set! row, col, true
   end
 
-  def random!
-    remove! row = (rand*board.size).floor, (rand*board[row].size).floor
+  def remove_random!
+    r, c = each_position(true).to_a[rand remaining]
+    raise "No pegs remaining" if r.nil?
+    remove! r, c
   end
 
   def move!(row, col, move, direction)
